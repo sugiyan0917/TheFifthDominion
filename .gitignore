@@ -1,0 +1,18 @@
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]serSettings/
+MemoryCaptures/
+# Rider/VS
+.idea/
+.vscode/
+*.csproj
+*.sln
+*.user
+# OS
+.DS_Store
+Thumbs.db
