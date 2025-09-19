@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dde8c0c43711b43c2acad01cafce7db8, type: 3}
+  m_Name: WorldDatabase
+  m_EditorClassIdentifier: 
+  countries:
+  - {fileID: 11400000, guid: 4654713c3deb14f53b6135d7a3f8a963, type: 2}
+  characters:
+  - {fileID: 11400000, guid: 399128c552c6249c5987a42edee68f8a, type: 2}
+  events:
+  - {fileID: 11400000, guid: 1b09a4a95a92b405aba56220718bdda0, type: 2}
