@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e0467961598248d2a87263ac294cc96, type: 3}
+  m_Name: Country2Def
+  m_EditorClassIdentifier: 
+  countryName: "\u30B0\u30EC\u30A4\u30D0\u30FC\u30C9\u5E1D\u56FD"
+  description: "\uFF1A\u8ECD\u4E8B\u3001\u6A5F\u68B0\u6280\u8853\u304C\u767A\u5C55\u3057\u305F\u5DE5\u696D\u56FD\u5BB6\u3002\u6A5F\u68B0\u5316\u5175\u3084\u9B54\u5C0E\u5175\u5668\u3092\u6271\u3046\u3002"
+  technology: 40
+  magichalogy: 100
+  culture: 50
+  stability: 50
+  isPlayerHomeland: 0

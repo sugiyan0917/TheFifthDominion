@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ae2a612100084799a2a8b4266576acd, type: 3}
+  m_Name: EventDef 7
+  m_EditorClassIdentifier: 
+  eventName: 1.8
+  summaryTemplate: "\u5317\u65B9\u306E\u7CBE\u970A\u68EE\u306B\u3066\u672A\u77E5\u306E\u53E4\u4EE3\u9B54\u6CD5\u9663\u3092\u767A\u898B\u3057\u3001\u7814\u7A76\u304C\u59CB\u307E\u308B"
+  tags: 
+  targetCountry: {fileID: 11400000, guid: 4654713c3deb14f53b6135d7a3f8a963, type: 2}
+  isGlobal: 0
+  weight: 50
+  severity: 50
