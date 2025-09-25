@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterName: "\u30BB\u30EA\u30A2"
   portrait: {fileID: 0}
-  homeland: {fileID: 0}
+  homeland: {fileID: 11400000, guid: 4654713c3deb14f53b6135d7a3f8a963, type: 2}
   profession: 1
   faction: 0
   curiosity: 50

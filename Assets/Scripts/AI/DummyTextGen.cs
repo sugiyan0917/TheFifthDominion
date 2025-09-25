@@ -6,7 +6,7 @@ namespace StoryGen.AI
     public class DummyTextGen : ITextGenProvider
     {
         public Task<string> GenerateRumorAsync(string eventText)
-            => Task.FromResult($"[噂] {eventText} に関する囁き。");
+            => Task.FromResult($"[噂] {eventText} に関する囁き。\n");
 
         public Task<string> GenerateNewsAsync(string eventText, string collectedRumors, bool asJournalist)
         {

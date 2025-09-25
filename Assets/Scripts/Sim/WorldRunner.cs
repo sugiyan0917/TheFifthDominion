@@ -1,10 +1,10 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
-using StoryGen.Domain;  // WorldDatabase, CountryDef など
+using StoryGen.Domain;  // WorldDatabase, CountryDef, CharacterDef, EventDef
 using StoryGen.AI;      // ITextGenProvider, DummyTextGen
-using StoryGen.Sim;     // BeliefNetworkSim など（別ファイルで定義している場合）
 
 namespace StoryGen.Sim
 {
@@ -21,70 +21,107 @@ namespace StoryGen.Sim
 
         [Header("タイミング")]
         [SerializeField] private float stepIntervalSec = 0.5f;
-        [SerializeField] private int maxStepsPerCountry = 5;
+        [SerializeField] private int maxStepsPerCountry = 10; // 各国10ターン固定
 
-        // LLM プロバイダ（ダミーで初期化、後で実APIに差し替え可能）
         private ITextGenProvider llm;
-
         private BeliefNetworkSim net;
-        private int step = 0;
-        private StringBuilder newsFeed = new();
 
         private void Awake()
         {
             if (database == null)
             {
                 Debug.LogError("[WorldRunner] WorldDatabase未割当");
-                enabled = false; 
+                enabled = false;
                 return;
             }
-            llm = new DummyTextGen(); // ★まずはダミーで回す
+            llm = new DummyTextGen(); // まずはダミー
         }
 
         private void Start()
         {
-            var firstCountry = database.countries.FirstOrDefault();
-            if (firstCountry == null)
-            {
-                Debug.LogError("CountryがDBにありません");
-                return;
-            }
-
-            int mainCount = database.characters.Count(c => c.homeland == firstCountry);
-            net = new BeliefNetworkSim(population, initialThreshold, initialWeights, hubPart, mainCount);
-
-            StartCoroutine(RunCountryCoroutine(firstCountry));
+            // ★ 各国を順番に処理（国ごとに10ターン）
+            StartCoroutine(RunAllCountriesCoroutine());
         }
 
-        private IEnumerator RunCountryCoroutine(CountryDef country)
+        private IEnumerator RunAllCountriesCoroutine()
         {
-            var events = database.events.Where(e => e.targetCountry == country || e.isGlobal).ToList();
-            if (events.Count == 0)
+            if (database.countries == null || database.countries.Count == 0)
             {
-                Debug.LogWarning("イベントがありません");
+                Debug.LogError("CountryがDBにありません");
                 yield break;
             }
 
-            for (int i = 0; i < Mathf.Min(maxStepsPerCountry, events.Count); i++)
+            for (int i = 0; i < database.countries.Count; i++)
+            {
+                var country = database.countries[i];
+                // 修正1: 必要な引数（country）を渡す
+                yield return RunCountryCoroutine(country);
+            }
+
+            Debug.Log("==== 全国家の処理が完了しました ====");
+        }
+
+        // 国ごとに 10 ターン分の「噂→記事」を生成し、国別の履歴もまとめる
+        private IEnumerator RunCountryCoroutine(CountryDef country)
+        {
+            // この国の出来事だけを“ちょうど10件”抽出
+            var events = database.events
+                .Where(e => e != null && e.targetCountry == country) // 国別イベントのみ
+                .Take(maxStepsPerCountry)
+                .ToList();
+
+            if (events.Count < maxStepsPerCountry)
+                Debug.LogWarning($"[WorldRunner] {country.countryName} の出来事が {events.Count} 件（推奨 {maxStepsPerCountry} 件）");
+
+            if (events.Count == 0)
+            {
+                Debug.LogWarning($"[WorldRunner] {country.countryName} にイベントがありません");
+                yield break;
+            }
+
+            // この国の主要人物数（今後の拡張用）
+            int mainCount = database.characters.Count(c => c != null && c.homeland == country);
+
+            // 国ごとにネットワークを作り直す（0:記者/1..mainCount:主要人物/最後:歴史家）
+            net = new BeliefNetworkSim(population, initialThreshold, initialWeights, hubPart, mainCount);
+
+            // 修正2: 国別フィード（スコープ内で宣言）
+            var countryFeed = new StringBuilder();
+            countryFeed.AppendLine($"=== {country.countryName} ===");
+
+            for (int i = 0; i < events.Count; i++)
             {
                 var eDef = events[i];
-                string eventText = !string.IsNullOrEmpty(eDef.summaryTemplate) ? eDef.summaryTemplate : eDef.eventName;
+                string baseText  = !string.IsNullOrEmpty(eDef.summaryTemplate) ? eDef.summaryTemplate : eDef.eventName;
+                string eventText = $"【国:{country.countryName}】{baseText}";
 
-                // 1) 噂生成
+                // 1) 噂（市民/主要人物）
                 yield return GenerateRumorsStep(eventText);
-                // 2) ニュース化
-                yield return GenerateNewsStep(eventText);
-                // 3) ネットワーク更新
+
+                // 2) 記事（記者が噂を集約）
+                // 修正3: news をループ内で宣言し、コールバックでセット
+                string news = null;
+                yield return GenerateNewsStep(eventText, n => news = n);
+
+                // 3) ネットワークを少し成長
                 net.UpdateEdgesByActiveRumors(4);
 
-                step++;
+                // 4) ログ追記
+                if (!string.IsNullOrEmpty(news))
+                    countryFeed.AppendLine(news);
+
                 yield return new WaitForSeconds(stepIntervalSec);
             }
 
-            // 4) 歴史統合
-            yield return GenerateHistoryStep();
-            Debug.Log("==== News Feed ====\n" + newsFeed.ToString());
+            // 5) 国別の履歴（まとめ）を生成
+            string history = null;
+            yield return GenerateHistoryStep(countryFeed.ToString(), h => history = h);
+
+            Debug.Log(countryFeed.ToString());
+            Debug.Log($"--- {country.countryName} Consolidated History ---\n{history}");
         }
+
+        // ===== ここから下：各ステップ =====
 
         private IEnumerator GenerateRumorsStep(string eventText)
         {
@@ -109,7 +146,8 @@ namespace StoryGen.Sim
             while (tasks.Any(t => !t.IsCompleted)) yield return null;
         }
 
-        private IEnumerator GenerateNewsStep(string eventText)
+        // 記事生成（噂を集約して1本の記事に）
+        private IEnumerator GenerateNewsStep(string eventText, System.Action<string> onNewsReady)
         {
             var collected = string.Join(" / ",
                 net.nodes.Values.Where(n => !string.IsNullOrEmpty(n.currentRumor)).Select(n => n.currentRumor));
@@ -120,18 +158,19 @@ namespace StoryGen.Sim
 
             while (!task.IsCompleted) yield return null;
 
-            newsFeed.AppendLine(news);
+            onNewsReady?.Invoke(news);
         }
 
-        private IEnumerator GenerateHistoryStep()
+        // 履歴生成（国別テキストを渡してまとめる）
+        private IEnumerator GenerateHistoryStep(string textToConsolidate, System.Action<string> onHistoryReady)
         {
             string consolidated = null;
-            var task = llm.GenerateHistoryAsync(newsFeed.ToString())
+            var task = llm.GenerateHistoryAsync(textToConsolidate)
                 .ContinueWith(t => consolidated = t.Result);
 
             while (!task.IsCompleted) yield return null;
 
-            newsFeed.AppendLine("\n--- Consolidated History ---\n" + consolidated);
+            onHistoryReady?.Invoke(consolidated);
         }
     }
 }
